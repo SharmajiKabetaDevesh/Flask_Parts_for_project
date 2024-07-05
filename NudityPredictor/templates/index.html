@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f7f7;
+        margin: 0;
+        padding: 0;
+      }
+
+      h1 {
+        text-align: center;
+        color: #333;
+      }
+
+      #chat {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+
+      #message {
+        list-style-type: none;
+        padding: 0;
+        margin-bottom: 20px;
+      }
+
+      #message li {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #f2f2f2;
+      }
+
+      #message li strong {
+        color: #333;
+      }
+
+      #chat-form {
+        display: flex;
+        align-items: center;
+      }
+
+      #chat-form input[type="text"] {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+        margin-right: 10px;
+      }
+
+      #chat-form input[type="file"] {
+        /* Remove display: none; to make the file input visible */
+      }
+
+      #chat-form button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      #chat-form button:hover {
+        background-color: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <br />
+    <h1 style="text-align: center">Public Chat app</h1>
+    <br /><br />
+    <div id="chat">
+      <ul id="messages"></ul>
+      <form id="chat-form">
+        <input id="message" type="text" placeholder="Enter your message" />
+        <input id="image" type="file" accept="image/*" />
+        <button>Send</button>
+      </form>
+    </div>
+  </body>
+  <script>
+    const socket = io();
+
+    let username;
+    const form = document.getElementById("chat-form");
+    const input = form.querySelector('input[type="text"]');
+    const fileInput = form.querySelector('input[type="file"]');
+    const messages = document.getElementById("messages");
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const file = fileInput.files[0];
+      if (!file && !input.value) {
+        alert("Please enter the message");
+        return;
+      }
+      if (file) {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          socket.emit("chat message", {
+            author: username,
+            content: input.value,
+            image: reader.result, // Use reader.result to get the base64 data URL of the image
+          });
+          input.value = "";
+          fileInput.value = "";
+        };
+      } else {
+        socket.emit("chat message", {
+          author: username,
+          content: input.value,
+          image: null,
+        });
+        input.value = "";
+      }
+    });
+
+    if (localStorage.getItem("username")) {
+      username = localStorage.getItem("username");
+      socket.emit("username", username);
+    } else {
+      const userInput = prompt("Enter Your username");
+      if (userInput === null || userInput.trim() === "") {
+        alert("You need to enter a username!");
+      } else {
+        username = userInput.trim();
+        socket.emit("username", username);
+        localStorage.setItem("username", username);
+      }
+    }
+
+    function scrollToBottom() {
+      const messageList = document.getElementById("messages");
+      messageList.scrollTop = messageList.scrollHeight;
+    }
+    socket.on("user joined", (username) => {
+      console.log(username);
+      const item = document.createElement("li");
+      let messages = document.getElementById("messages");
+      item.classList.add("chat-message");
+      item.innerHTML = `<span class= 'chat-username'>${username}</span> : has joined the chat`;
+      messages.appendChild(item);
+      scrollToBottom();
+    });
+
+    socket.on("user left", (data) => {
+      const item = document.createElement("li");
+      let messages = document.getElementById("messages");
+      item.classList.add("chat-message");
+      item.innerHTML = `<span class= 'chat-username'>${data}</span> : has left the chat`;
+      messages.appendChild(item);
+      scrollToBottom();
+    });
+
+    socket.on("chat message", (msg) => {
+      const item = document.createElement("li");
+      item.classList.add("chat-message");
+      item.innerHTML = `<span class="chat-username">${msg.author}</span>: ${msg.content}`;
+      if (msg.image) {
+        const img = document.createElement("img");
+        img.src = msg.image; // Set the src attribute to the image URL
+        img.width = 200;
+        img.height = 300;
+        item.classList.add("image");
+        item.appendChild(img);
+      }
+      messages.appendChild(item);
+      scrollToBottom();
+    });
+
+    socket.on("load messages", (messages) => {
+      const messageList = document.getElementById("messages");
+      messages.forEach((msg) => {
+        const item = document.createElement("li"); // Create a new list item for each message
+        item.classList.add("chat-message");
+        item.innerHTML = `<span class="chat-username">${msg.author}</span>: ${msg.content}`;
+        if (msg.image) {
+          const img = document.createElement("img");
+          img.src = msg.image; // Set the src attribute to the image URL
+          img.width = 200;
+          img.height = 300;
+          item.classList.add("image");
+          item.appendChild(img);
+        }
+        messageList.appendChild(item); // Append the new list item to the messageList
+      });
+
+      scrollToBottom();
+    });
+  </script>
+</html>

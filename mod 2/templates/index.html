@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" /> 
+    <script type="text/javascript" src="{{ url_for('static', filename='script/script.js') }}"></script>
+</head>
+
+<body>
+
+    <form action='/submit' method='post'>
+        <h1>HTML Form</h1>
+        <label for='Science'>Science: </label>
+        <input type="text" id="science" name="science" value="0" /><br>
+        <label for='Maths'>Maths: </label>
+        <input type="text" id="math" name="math" value="0" /><br>
+        <label for='DataScience'>DataScience: </label>
+        <input type="text" id="datascience" name="datascience" value="0" /><br>
+        <input type="submit" value="Submit" />
+    </form>
+   
+</body>
+
+</html>
